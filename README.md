@@ -1,16 +1,11 @@
 ### Kong Event Gateway (Protocol Mediation) Demo
-This demo environment uses Kong 3.10 running in Hybrid Mode.
+This demo environment uses Kong 3.10 running in DB-less
 
-### Features
-* Kong Enterprise 3.10 in Hybrid Mode on Docker.
-* Kafka
+* Kong Enterprise 3.10 in DB-less (declarative) on Docker.
+* Confluent Kafka
 
 ### How to run
 1. Ensure your license is configured in `$KONG_LICENSE_DATA`
-2. Start the containers: `docker-compose up -d`
-3. Sync the config: `deck gateway sync kong/config/kong.yaml`
-
-### Optional
-The certificates for CP/DP communication are already prepared, but you can create your own by running `./kong/config/gen-certs.sh`
-
-
+2. Generate the certs for mTLS: `./gen-certs.sh`
+3. Patch the config to use the newly generated certs: `./patch.sh`
+4. Start the containers: `docker-compose up -d`

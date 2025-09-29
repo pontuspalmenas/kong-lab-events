@@ -12,13 +12,21 @@ echo "🔐 [1/10] Generating CA..."
 openssl req -new -x509 -keyout $CA_KEY -out $CA_CERT -days 365 -nodes -subj "/CN=Local Kafka CA"
 
 echo "🖥️ [2/10] Generating Kafka server key and CSR..."
-openssl req -newkey rsa:2048 -nodes -keyout $CERTS_DIR/kafka.server.key -out $CERTS_DIR/kafka.server.csr -subj "/CN=localhost"
+openssl req -newkey rsa:2048 -nodes \
+  -keyout $CERTS_DIR/kafka.server.key \
+  -out $CERTS_DIR/kafka.server.csr \
+  -subj "/CN=kafka" \
+  -addext "subjectAltName=DNS:localhost,DNS:kafka,IP:127.0.0.1"
 
 echo "📜 [3/10] Signing Kafka server cert with CA..."
 openssl x509 -req -in $CERTS_DIR/kafka.server.csr -CA $CA_CERT -CAkey $CA_KEY -CAcreateserial -out $CERTS_DIR/kafka.server.crt -days 365
 
 echo "👤 [4/10] Generating Kafka client key and CSR..."
-openssl req -newkey rsa:2048 -nodes -keyout $CERTS_DIR/kafka.client.key -out $CERTS_DIR/kafka.client.csr -subj "/CN=localhost"
+openssl req -newkey rsa:2048 -nodes \
+  -keyout $CERTS_DIR/kafka.client.key \
+  -out $CERTS_DIR/kafka.client.csr \
+  -subj "/CN=kong" \
+  -addext "subjectAltName=DNS:localhost,DNS:kong,IP:127.0.0.1"
 
 echo "📜 [5/10] Signing Kafka client cert with CA..."
 openssl x509 -req -in $CERTS_DIR/kafka.client.csr -CA $CA_CERT -CAkey $CA_KEY -CAcreateserial -out $CERTS_DIR/kafka.client.crt -days 365

@@ -3,12 +3,15 @@ services:
     image: confluentinc/cp-kafka:7.6.1 # Using a known stable version for testing
     container_name: kafka
     hostname: kafka
+    networks:
+      - kong-net
     ports:
       - "9092:9092"
+      - "9093:9093"
     volumes:
       - ./secrets:/etc/kafka/secrets
     healthcheck:
-      test: ["CMD-SHELL", "/usr/bin/kafka-topics.sh --bootstrap-server localhost:9093 --list --command-config /etc/kafka/secrets/client.properties"]
+      test: ["CMD-SHELL", "/usr/bin/kafka-topics.sh --bootstrap-server kafka:9093 --list --command-config /etc/kafka/secrets/client.properties"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -17,13 +20,13 @@ services:
       CLUSTER_ID: 'MjQ1RDRBRTQtNzYxMy00OD' 
       KAFKA_NODE_ID: 1 
       KAFKA_PROCESS_ROLES: 'broker,controller' 
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093' 
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9094' 
       
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER' 
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092' 
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT' 
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_LISTENERS: 'SSL://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka:9093,PLAINTEXT_HOST://kafka:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SSL,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'SSL'
       
       # Topic Settings
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -32,11 +35,16 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
       # mTLS
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.server.keystore.jks
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
       KAFKA_SSL_KEYSTORE_PASSWORD: password
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: passwords.txt
       KAFKA_SSL_KEY_PASSWORD: password
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.server.truststore.jks
+      KAFKA_SSL_KEY_CREDENTIALS: passwords.txt      
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.server.truststore.jks
       KAFKA_SSL_TRUSTSTORE_PASSWORD: password
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: passwords.txt
       KAFKA_SSL_CLIENT_AUTH: required
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: HTTPS
 
@@ -50,7 +58,12 @@ services:
     container_name: kong
     depends_on:
       - kafka
-    network_mode: host
+    networks:
+      - kong-net
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
     volumes:
       - ./kong:/kong
       - ./secrets:/etc/secrets
@@ -67,4 +80,8 @@ services:
       KONG_CLIENT_SSL_CERT: /etc/secrets/kafka.client.crt
       KONG_CLIENT_SSL_CERT_KEY: /etc/secrets/kafka.client.key
       KONG_NGINX_PROXY_PROXY_SSL_TRUSTED_CERTIFICATE: /etc/secrets/ca.crt
-      KONG_LUA_SSL_TRUSTED_CERTIFICATE: /etc/secrets/ca.crt
+      KONG_LUA_SSL_TRUSTED_CERTIFICATE: /etc/secrets/ca.crt 
+
+networks:
+  kong-net:
+    driver: bridge

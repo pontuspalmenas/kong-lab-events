@@ -10,20 +10,8 @@ routes:
           topics:
             - name: kong-events
           bootstrap_servers:
-            - host: localhost
-              port: 9092
+            - host: kafka
+              port: 9093
           security:
             certificate_id: placeholder
             ssl: true
-  - name: kafka-sse
-    paths:
-      - /kafka/sse
-    plugins:
-      - name: kafka-consume
-        config:
-          topics:
-            - name: kong-events
-          mode: server-sent-events
-          bootstrap_servers:
-            - host: localhost
-              port: 9092
